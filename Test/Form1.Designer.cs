@@ -67,7 +67,7 @@ namespace Test
             this.generation.TabIndex = 2;
             this.generation.Text = "Génération";
             this.generation.UseVisualStyleBackColor = true;
-            this.generation.Click += new System.EventHandler(this.generation_Click);
+            this.generation.Click += new System.EventHandler(this.Generate_Click);
             // 
             // pathFichier
             // 
