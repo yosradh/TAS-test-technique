@@ -9,7 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Windows.Forms;
 
-namespace Test
+namespace TAS_Test
 {
     public class Employee
     {
@@ -46,7 +46,7 @@ namespace Test
         ALIGN_JUSTIFIED = 3
     }
 
-    public partial class Form1 : Form
+    public partial class Generator : System.Windows.Forms.Form
     {
         //Text File name
         private string TextFileName = @"Cnss.txt";
@@ -64,7 +64,7 @@ namespace Test
         public List<Employee> employees = new List<Employee>();
 
         //initialiser form
-        public Form1()
+        public Generator()
         {
             InitializeComponent();
 

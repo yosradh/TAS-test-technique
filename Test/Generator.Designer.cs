@@ -1,9 +1,9 @@
 ﻿
 using System;
 
-namespace Test
+namespace TAS_Test
 {
-    partial class Form1
+    partial class Generator
     {
         /// <summary>
         /// Variable nécessaire au concepteur.

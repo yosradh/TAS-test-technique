@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 
 
-namespace Test.Properties
+namespace TAS_Test.Properties
 {
     /// <summary>
     ///   Une classe de ressource fortement typée destinée, entre autres, à la consultation des chaînes localisées.
