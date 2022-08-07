@@ -1,4 +1,5 @@
 ﻿using ExcelDataReader;
+using IronPdf;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
 using System;
@@ -7,10 +8,13 @@ using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+
 
 namespace TAS_Test
 {
+
     public class Employee
     {
         public string Name;
@@ -49,11 +53,12 @@ namespace TAS_Test
     public partial class Generator : System.Windows.Forms.Form
     {
         //Text File name
-        private string TextFileName = @"Cnss.txt";
+        private string TextFileName = "Cnss.txt";
 
         //PDF File name
-        private string PDFFileName = "GeneratePDF.pdf";
+        private string PDFFileName = "GeneratedPDF.pdf";
 
+  
         //Set Write Fonts
         private Font policeTitre = new Font(iTextSharp.text.Font.FontFamily.TIMES_ROMAN, 17f);
         private Font FontTab = new Font(iTextSharp.text.Font.FontFamily.HELVETICA, 12f, iTextSharp.text.Font.BOLD);
@@ -63,18 +68,21 @@ namespace TAS_Test
         //liste of employees 
         public List<Employee> employees = new List<Employee>();
 
-        //initialiser form
+        public string FilesPath;
+
+        //initialiser form  
         public Generator()
         {
             InitializeComponent();
-        }
 
-        #region Employees Region
-        /// <summary>
-        /// Create Employees From XLS Table and store them in Employees List
-        /// </summary>
-        /// <param name="table"></param>
-        public void CreateEmployees(DataTable table)
+    }
+
+    #region Employees Region
+    /// <summary>
+    /// Create Employees From XLS Table and store them in Employees List
+    /// </summary>
+    /// <param name="table"></param>
+    public void CreateEmployees(DataTable table)
         {
             employees.Clear();
 
@@ -138,6 +146,9 @@ namespace TAS_Test
         /// <param name="table">Table</param>
         /// <param name="alignmentType">AlignmentType : LEFT,RIGHT OR CENTER</param>
         /// <param name="isTitle">IF true,It's a title cell</param>
+        /// 
+      
+
         private void AddCelluleToTab(string str, Font f, PdfPTable table,AlignmentType alignmentType = AlignmentType.ALIGN_CENTER, bool isTitle = false)
         {
 
@@ -155,13 +166,40 @@ namespace TAS_Test
         /// Generate the pdf file from xsl file
         /// </summary>
         /// <param name="table"></param>
-        private void GeneretePDF(DataTable table)
+        private void GenereteFiles(DataTable table)
         {
-            var nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
-            nfi.NumberGroupSeparator = " ";
+            // Code for Select the folder to save the file.
+            SaveFileDialog SFD = new SaveFileDialog();
+            SFD.InitialDirectory = @"C:";
+            SFD.Title = "Save Generated Files !";
+            SFD.FileName = PDFFileName;
+            SFD.RestoreDirectory = true;
 
+            if (SFD.ShowDialog() == DialogResult.OK)
+            {
+                string path = System.IO.Path.GetDirectoryName(SFD.FileName);
+
+                FilesPath = path;
+
+                CreateEmployees(table);
+
+                CreatePDFFile(Path.Combine(path,PDFFileName));
+
+                File.WriteAllText(Path.Combine(path, TextFileName), GetStringFromEmployees(table));
+            }
+
+        }
+
+        public void CreatePDFFile(string path)
+        {
             //Create PDF Document 
-            string outfile = Environment.CurrentDirectory + "/"+PDFFileName;
+            //string outfile = Environment.CurrentDirectory + "/"+PDFFileName;
+
+
+            Console.WriteLine("Path : " + path);
+
+            string outfile = path;
+
             Document doc = new Document();
             PdfWriter.GetInstance(doc, new FileStream(outfile, FileMode.Create));
             doc.Open();
@@ -177,7 +215,7 @@ namespace TAS_Test
             doc.Add(space);
 
             AddEmployeesTable(doc);
-         
+
             //Next page 
             doc.NewPage();
 
@@ -187,7 +225,6 @@ namespace TAS_Test
             //Close document
             doc.Close();
         }
-
         public void AddEmployeesTable(Document doc)
         {
             var nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
@@ -256,6 +293,8 @@ namespace TAS_Test
         /// <param name="FileName">File name with ext</param>
         public void OpenFile(string path, string FileName)
         {
+            if (string.IsNullOrEmpty(path)) return;
+
             var folder = path;
             var fullpath = Path.Combine(folder, FileName);
             Console.WriteLine(fullpath);
@@ -299,7 +338,7 @@ namespace TAS_Test
                 pathFichier.Text = openFileDialog.FileName.ToString();
             }
         }
-
+      
         /// <summary>
         /// G
         /// </summary>
@@ -318,11 +357,11 @@ namespace TAS_Test
                         ConfigureDataTable = (_) => new ExcelDataTableConfiguration() { UseHeaderRow = true }
                     });
 
-                    File.WriteAllText(TextFileName, GetStringFromEmployees(resultat.Tables[0]));
-                    GeneretePDF(resultat.Tables[0]);
+                    
+                    GenereteFiles(resultat.Tables[0]);
 
-                    OpenFile(Environment.CurrentDirectory, PDFFileName);
-                    OpenFile(Environment.CurrentDirectory, TextFileName);
+                    OpenFile(FilesPath, PDFFileName);
+                    OpenFile(FilesPath, TextFileName);
                 }
             }
         }
