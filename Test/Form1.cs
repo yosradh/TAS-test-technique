@@ -46,15 +46,21 @@ namespace Test
         ALIGN_JUSTIFIED = 3
     }
 
-
-
-
     public partial class Form1 : Form
     {
-        //mon fichier text
-        string myPath = @"Cnss.txt";
+        //Text File name
+        private string TextFileName = @"Cnss.txt";
 
-        //liste des employees 
+        //PDF File name
+        private string PDFFileName = "GeneratePDF.pdf";
+
+        //Set Write Fonts
+        private Font policeTitre = new Font(iTextSharp.text.Font.FontFamily.TIMES_ROMAN, 17f);
+        private Font FontTab = new Font(iTextSharp.text.Font.FontFamily.HELVETICA, 12f, iTextSharp.text.Font.BOLD);
+        private Font FontSalairy = new Font(iTextSharp.text.Font.FontFamily.HELVETICA, 12f);
+        private Font FontNom = new Font(iTextSharp.text.Font.FontFamily.COURIER, 12f, iTextSharp.text.Font.BOLDITALIC);
+
+        //liste of employees 
         public List<Employee> employees = new List<Employee>();
 
         //initialiser form
@@ -64,11 +70,10 @@ namespace Test
 
         }
 
-
-       
-
-        //*********************************//
-        //creer les employees a partir fichier excel 
+        /// <summary>
+        /// Create Employees From XLS Table and store them in Employees List
+        /// </summary>
+        /// <param name="table"></param>
         public void CreateEmployees(DataTable table)
         {
             employees.Clear();
@@ -95,8 +100,6 @@ namespace Test
                 employee.M1 = float.Parse((table.Rows[i][table.Columns[2]].ToString()));
                 employee.M2 = float.Parse((table.Rows[i][table.Columns[3]].ToString()));
                 employee.M3 = float.Parse((table.Rows[i][table.Columns[4]].ToString()));
-
-
 
                 employees.Add(employee);
             }
@@ -126,21 +129,26 @@ namespace Test
         #endregion
 
         #region PDF REGION
-        //*********************************//
-        //generation cellule tableau
+        /// <summary>
+        /// Add Cell To Table
+        /// </summary>
+        /// <param name="str">string Data</param>
+        /// <param name="f">Font</param>
+        /// <param name="table">Table</param>
+        /// <param name="alignmentType">AlignmentType : LEFT,RIGHT OR CENTER</param>
+        /// <param name="isTitle">IF true,It's a title cell</param>
         private void AddCelluleToTab(string str, Font f, PdfPTable table,AlignmentType alignmentType = AlignmentType.ALIGN_CENTER, bool isTitle = false)
         {
 
-            PdfPCell cell1 = new PdfPCell(new Phrase(str, f));
+            PdfPCell cell = new PdfPCell(new Phrase(str, f));
             if (isTitle)
-                cell1.Padding = 25;
+                cell.Padding = 25;
             else
-                cell1.Padding = 5;
+                cell.Padding = 5;
 
-            cell1.HorizontalAlignment = (int)alignmentType;
-            table.AddCell(cell1);
+            cell.HorizontalAlignment = (int)alignmentType;
+            table.AddCell(cell);
         }
-
 
         /// <summary>
         /// Generate the pdf file from xsl file
@@ -148,96 +156,95 @@ namespace Test
         /// <param name="table"></param>
         private void GeneretePDF(DataTable table)
         {
-
-            string outfile = Environment.CurrentDirectory + "/GeneratePDF.pdf";
-
             var nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
             nfi.NumberGroupSeparator = " ";
 
-
-            //creation du document 
+            //Create PDF Document 
+            string outfile = Environment.CurrentDirectory + "/"+PDFFileName;
             Document doc = new Document();
             PdfWriter.GetInstance(doc, new FileStream(outfile, FileMode.Create));
             doc.Open();
 
-            //Polices d'écriture
-
-            Font policeTitre = new Font(iTextSharp.text.Font.FontFamily.TIMES_ROMAN, 17f);
-            Font FontTab = new Font(iTextSharp.text.Font.FontFamily.HELVETICA, 12f, iTextSharp.text.Font.BOLD);
-            Font FontSalairy = new Font(iTextSharp.text.Font.FontFamily.HELVETICA, 12f);
-            Font FontNom = new Font(iTextSharp.text.Font.FontFamily.COURIER, 12f, iTextSharp.text.Font.BOLDITALIC);
-
-
-            //page
-            //creation de paragraphe
+            //Create Title Paragraph
             Paragraph titre = new Paragraph("Declaration CNSS \n", policeTitre);
             titre.Alignment = Element.ALIGN_CENTER;
             doc.Add(titre);
 
+            //Space between the title and the table
             Paragraph space = new Paragraph(" ", policeTitre);
             space.Alignment = Element.ALIGN_CENTER;
             doc.Add(space);
 
-            //Creation un tableau 
-            PdfPTable tableau1 = new PdfPTable(5);
-            tableau1.WidthPercentage = 100;
+            AddEmployeesTable(doc);
+         
+            //Next page 
+            doc.NewPage();
 
-            //Cellule (les titres de tableau)
-            AddCelluleToTab("Nom", FontTab, tableau1, isTitle : true) ;
-            AddCelluleToTab("Prenom", FontTab, tableau1, isTitle: true);
-            AddCelluleToTab("M1", FontTab, tableau1, isTitle: true);
-            AddCelluleToTab("M2", FontTab, tableau1, isTitle: true);
-            AddCelluleToTab("M3", FontTab, tableau1, isTitle: true);
+            //Add Total Table
+            AddTotalTable(doc);
 
-            //lister les infos 
-            CreateEmployees(table);
+            //Close document
+            doc.Close();
+        }
 
+        public void AddEmployeesTable(Document doc)
+        {
+            var nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
+            nfi.NumberGroupSeparator = " ";
+
+            //Create employees Table
+            PdfPTable EmployeesTable = new PdfPTable(5);
+            EmployeesTable.WidthPercentage = 100;
+
+            //Add Title Cells
+            AddCelluleToTab("Nom", FontTab, EmployeesTable, isTitle: true);
+            AddCelluleToTab("Prenom", FontTab, EmployeesTable, isTitle: true);
+            AddCelluleToTab("M1", FontTab, EmployeesTable, isTitle: true);
+            AddCelluleToTab("M2", FontTab, EmployeesTable, isTitle: true);
+            AddCelluleToTab("M3", FontTab, EmployeesTable, isTitle: true);
+
+            //Add Employees Data
             for (int i = 0; i < employees.Count; i++)
             {
-                AddCelluleToTab(employees[i].Name, FontNom, tableau1, AlignmentType.ALIGN_LEFT);
-                AddCelluleToTab(employees[i].Surname, FontNom, tableau1, AlignmentType.ALIGN_LEFT);
-                AddCelluleToTab(employees[i].M1.ToString("#,0.000", nfi), FontSalairy, tableau1);
-                AddCelluleToTab(employees[i].M2.ToString("#,0.000", nfi), FontSalairy, tableau1);
-                AddCelluleToTab(employees[i].M3.ToString("#,0.000", nfi), FontSalairy, tableau1);
-
+                AddCelluleToTab(employees[i].Name, FontNom, EmployeesTable, AlignmentType.ALIGN_LEFT);//Add Name
+                AddCelluleToTab(employees[i].Surname, FontNom, EmployeesTable, AlignmentType.ALIGN_LEFT);//Add SurName
+                AddCelluleToTab(employees[i].M1.ToString("#,0.000", nfi), FontSalairy, EmployeesTable);//Add M1
+                AddCelluleToTab(employees[i].M2.ToString("#,0.000", nfi), FontSalairy, EmployeesTable);//Add M2
+                AddCelluleToTab(employees[i].M3.ToString("#,0.000", nfi), FontSalairy, EmployeesTable);//Add M3
             }
+
+            //Add Total Cell
             PdfPCell Total = new PdfPCell(new Phrase("TOTAL", FontTab));
             Total.Colspan = 5;
             Total.HorizontalAlignment = 1;
-            tableau1.AddCell(Total);
+            EmployeesTable.AddCell(Total);
 
-            //ajouter tableau
-            doc.Add(tableau1);
+            //Add Table to the PDF Document
+            doc.Add(EmployeesTable);
+        }
 
-            /******************/
-            //2éme page 
-            doc.NewPage();
+        public void AddTotalTable(Document doc)
+        {
+            var nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
+            nfi.NumberGroupSeparator = " ";
 
-            //2éme tableau
-            PdfPTable tableauTotal = new PdfPTable(1);
-            tableauTotal.WidthPercentage = 20;
-            tableauTotal.HorizontalAlignment = 3;
+            PdfPTable TotalTable = new PdfPTable(1);
+            TotalTable.WidthPercentage = 20;
+            TotalTable.HorizontalAlignment = 3;
 
-            AddCelluleToTab("TOTAL", FontTab, tableauTotal,isTitle : true);
+            AddCelluleToTab("TOTAL", FontTab, TotalTable, isTitle: true);
 
             //Add Cells to total table
             float total = 0f;
             for (int i = 0; i < employees.Count; i++)
             {
                 total += employees[i].TotalSalary;
-                AddCelluleToTab(employees[i].TotalSalary.ToString("#,0.000", nfi), FontSalairy, tableauTotal);
+                AddCelluleToTab(employees[i].TotalSalary.ToString("#,0.000", nfi), FontSalairy, TotalTable);
             }
 
-            AddCelluleToTab(total.ToString("#,0.000", nfi), FontTab, tableauTotal);
-            doc.Add(tableauTotal);
-
-            //Close document
-            doc.Close();
-
-            OpenFile(Environment.CurrentDirectory, "GeneratePDF.pdf");
-            OpenFile(Environment.CurrentDirectory, "Cnss.txt");
+            AddCelluleToTab(total.ToString("#,0.000", nfi), FontTab, TotalTable);
+            doc.Add(TotalTable);
         }
-
         #endregion
 
         #region File management
@@ -310,9 +317,11 @@ namespace Test
                         ConfigureDataTable = (_) => new ExcelDataTableConfiguration() { UseHeaderRow = true }
                     });
 
-                    File.WriteAllText(myPath, GetStringFromEmployees(resultat.Tables[0]));
+                    File.WriteAllText(TextFileName, GetStringFromEmployees(resultat.Tables[0]));
                     GeneretePDF(resultat.Tables[0]);
 
+                    OpenFile(Environment.CurrentDirectory, PDFFileName);
+                    OpenFile(Environment.CurrentDirectory, TextFileName);
                 }
             }
         }
