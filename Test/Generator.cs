@@ -67,9 +67,9 @@ namespace TAS_Test
         public Generator()
         {
             InitializeComponent();
-
         }
 
+        #region Employees Region
         /// <summary>
         /// Create Employees From XLS Table and store them in Employees List
         /// </summary>
@@ -104,6 +104,7 @@ namespace TAS_Test
                 employees.Add(employee);
             }
         }
+        #endregion
 
         #region Text file region
         /// <summary>
